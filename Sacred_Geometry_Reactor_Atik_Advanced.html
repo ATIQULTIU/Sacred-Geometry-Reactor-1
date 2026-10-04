@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+<meta name="description" content="An interactive Three.js sacred geometry reactor with procedural neon effects, a synth ambience toggle, and energy surge controls.">
+    <meta charset="UTF-8">
+    <title>Sacred Geometry Reactor</title>
+    
+
+  <style>
+/* ATIK // ADVANCED REACTOR UI */
+#reactor-boot {
+  position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center;
+  background: radial-gradient(ellipse at center, #091322 0%, #03060d 48%, #010208 100%);
+  color: #dffaff; font-family: "Orbitron", "Courier New", monospace;
+  transition: opacity .8s ease, visibility .8s ease;
+}
+#reactor-boot.boot-out { opacity: 0; visibility: hidden; pointer-events: none; }
+.boot-shell { width: min(520px, 86vw); text-align: center; }
+.boot-emblem { width: 104px; height: 104px; margin: 0 auto 26px; position: relative; }
+.boot-emblem:before,.boot-emblem:after { content:""; position:absolute; inset:7px; border:1px solid #00eaff; transform:rotate(45deg); box-shadow:0 0 22px #00eaff55; animation:boot-spin 7s linear infinite; }
+.boot-emblem:after { inset:19px; border-color:#ffbd4a; transform:rotate(0); animation:boot-spin 5s linear infinite reverse; }
+.boot-core { position:absolute; inset:38px; border-radius:50%; background:#fff; box-shadow:0 0 18px #00eaff,0 0 45px #00eaff; animation:core-beat 1.2s ease-in-out infinite; }
+.boot-title { font-size: clamp(17px, 4vw, 24px); letter-spacing:.22em; text-transform:uppercase; }
+.boot-sub { color:#79a9bc; font-size:10px; letter-spacing:.2em; margin-top:10px; }
+.boot-track { height:3px; margin:26px 0 10px; background:#142638; overflow:hidden; }
+#boot-progress { width:0%; height:100%; background:linear-gradient(90deg,#00eaff,#ffbd4a); box-shadow:0 0 12px #00eaff; transition:width .18s linear; }
+#boot-status { color:#ffbd4a; font-size:10px; letter-spacing:.13em; }
+#reactor-console { position:fixed; z-index:50; right:22px; bottom:22px; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; max-width:min(560px,calc(100vw - 32px)); }
+.reactor-btn { cursor:pointer; border:1px solid #00eaff77; background:#06111ddd; color:#bafaff; padding:11px 13px; font:600 10px/1.2 "Orbitron",monospace; letter-spacing:.1em; text-transform:uppercase; backdrop-filter:blur(10px); box-shadow:inset 0 0 16px #00eaff0b; transition:transform .2s,border-color .2s,background .2s; }
+.reactor-btn:hover,.reactor-btn:focus-visible { border-color:#ffbd4a; background:#102333f2; transform:translateY(-2px); outline:none; }
+.reactor-btn.active { border-color:#ffbd4a; color:#ffdb92; box-shadow:0 0 18px #ffbd4a20; }
+#reactor-toast { position:fixed; z-index:60; left:50%; bottom:82px; transform:translate(-50%,10px); opacity:0; pointer-events:none; color:#dffaff; background:#06111deF; border:1px solid #00eaff66; padding:10px 15px; font:10px "Orbitron",monospace; letter-spacing:.12em; transition:opacity .2s,transform .2s; }
+#reactor-toast.show { opacity:1; transform:translate(-50%,0); }
+#reactor-credit { position:fixed; z-index:40; left:22px; bottom:20px; color:#80a9b9; font:10px/1.7 "Courier New",monospace; letter-spacing:.06em; text-shadow:0 0 12px #00eaff33; }
+#reactor-credit a { color:#ffbd4a; text-decoration:none; }
+@keyframes boot-spin { to { transform:rotate(405deg); } }
+@keyframes core-beat { 50% { transform:scale(.7); opacity:.6; } }
+@media(max-width:650px) {
+  #reactor-console { left:12px; right:12px; bottom:58px; justify-content:center; }
+  .reactor-btn { padding:10px 9px; font-size:9px; }
+  #reactor-credit { left:12px; bottom:8px; font-size:8px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .boot-emblem:before,.boot-emblem:after,.boot-core { animation:none; }
+  * { scroll-behavior:auto !important; }
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+    
+  <body>
+  <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Energy Sacred Geometry</title>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;700&family=Space+Mono&display=swap');
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #030305;
+    background:
+      radial-gradient(circle at 50% 46%, rgba(255, 188, 64, 0.13) 0%, rgba(255, 188, 64, 0.035) 11%, transparent 28%),
+      radial-gradient(circle at 35% 28%, rgba(0, 240, 255, 0.2) 0%, rgba(0, 89, 255, 0.065) 26%, transparent 48%),
+      radial-gradient(circle at 70% 66%, rgba(255, 0, 118, 0.16) 0%, rgba(255, 0, 118, 0.045) 24%, transparent 48%),
+      radial-gradient(circle at center, #0d1022 0%, #05050a 52%, #010103 100%);
+    font-family: 'Rajdhani', sans-serif;
+    color: #fff;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(115deg, transparent 0%, rgba(0, 240, 255, 0.04) 28%, transparent 46%, rgba(255, 170, 0, 0.035) 63%, transparent 100%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px, transparent 1px, transparent 4px);
+    mix-blend-mode: screen;
+    opacity: 0.72;
+    z-index: 2;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at center, transparent 0%, transparent 48%, rgba(0,0,0,0.52) 100%);
+    z-index: 3;
+  }
+
+  #app {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+  }
+
+  .ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 30px;
+    box-sizing: border-box;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+  }
+
+  .title-box h1 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #00f0ff;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.5), 0 0 30px rgba(0, 240, 255, 0.22);
+  }
+
+  .title-box p {
+    margin: 5px 0 0 0;
+    font-size: 0.75rem;
+    color: #ffbc40;
+    font-family: 'Space Mono', monospace;
+    text-shadow: 0 0 12px rgba(255, 188, 64, 0.35);
+  }
+
+  .status {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.55);
+    text-align: right;
+    padding: 12px 14px;
+    border: 1px solid rgba(0, 240, 255, 0.14);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.18);
+    box-shadow: inset 0 0 24px rgba(0, 240, 255, 0.045), 0 0 30px rgba(0,0,0,0.2);
+    backdrop-filter: blur(6px);
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .hint {
+    color: rgba(0, 240, 255, 0.7);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-shadow: 0 0 12px rgba(0, 240, 255, 0.28);
+  }
+
+  .hint::before {
+    content: '';
+    display: inline-block;
+    width: 30px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0, 240, 255, 0.15), rgba(255, 188, 64, 0.85));
+    box-shadow: 0 0 12px rgba(255, 188, 64, 0.45);
+  }
+
+  .frame-corners {
+    position: absolute;
+    top: 20px; left: 20px; right: 20px; bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    pointer-events: none;
+    box-shadow: inset 0 0 50px rgba(0, 240, 255, 0.025);
+  }
+
+  .frame-corners::before, .frame-corners::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    border-color: rgba(255, 188, 64, 0.65);
+    border-style: solid;
+    filter: drop-shadow(0 0 8px rgba(255, 188, 64, 0.35));
+  }
+
+  .frame-corners::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .frame-corners::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+</style>
+
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/"
+    }
+  }
+</script>
+
+<div id="app"></div>
+
+<div class="ui-layer">
+  <div class="frame-corners"></div>
+  <div class="header">
+    <div class="title-box">
+      <h1>Construct_04</h1>
+      <p>Intermittent Energy Matrix</p>
+    </div>
+    <div class="status">
+      SYS.ONLINE<br>
+      FREQ: <span id="freq-val">144.0</span>HZ<br>
+      CORE: <span style="color:#ffbc40">VISIBLE</span><br>
+      STB: <span style="color:#00f0ff">99.9%</span>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="hint">Initialize Interaction [Drag/Zoom]</div>
+    <svg width="40" height="40" viewBox="0 0 40 40" style="opacity: 0.65; filter: drop-shadow(0 0 8px rgba(255,188,64,0.32));">
+      <circle cx="20" cy="20" r="18" fill="none" stroke="#00f0ff" stroke-width="1" stroke-dasharray="2 4"/>
+      <circle cx="20" cy="20" r="10" fill="none" stroke="#ffbc40" stroke-width="1"/>
+      <circle cx="20" cy="20" r="2" fill="#fff"/>
+    </svg>
+  </div>
+</div>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+  import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+  const app = document.querySelector('#app');
+  const clock = new THREE.Clock();
+
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    powerPreference: 'high-performance'
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.95;
+  app.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x020204, 0.022);
+
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(2.2, 1.55, 8.6);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.rotateSpeed = 0.6;
+  controls.minDistance = 4;
+  controls.maxDistance = 20;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 0.5;
+  controls.target.set(0, 0, 0);
+
+  const composer = new EffectComposer(renderer);
+  const renderPass = new RenderPass(scene, camera);
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight), 
+    0.80,
+    0.44,
+    0.50
+  );
+  const outputPass = new OutputPass();
+  composer.addPass(renderPass);
+  composer.addPass(bloomPass);
+  composer.addPass(outputPass);
+
+  const colors = {
+    cyan: new THREE.Color(0x00f0ff),
+    deepBlue: new THREE.Color(0x0022ff),
+    magenta: new THREE.Color(0xff0055),
+    gold: new THREE.Color(0xffaa00),
+    amberCore: new THREE.Color(0xffbc40),
+    violetCore: new THREE.Color(0x8a2cff),
+    emerald: new THREE.Color(0x00ff9d),
+    hotWhite: new THREE.Color(0xffffff)
+  };
+
+  const sharedUniforms = {
+    uTime: { value: 0 },
+    uFlicker: { value: 1 }
+  };
+
+  const masterGroup = new THREE.Group();
+  const outerConstruct = new THREE.Group();
+  const innerConstruct = new THREE.Group();
+  const auraGroup = new THREE.Group();
+  masterGroup.add(outerConstruct);
+  masterGroup.add(innerConstruct);
+  masterGroup.add(auraGroup);
+  scene.add(masterGroup);
+
+  const energyTubeMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: sharedUniforms.uTime,
+      uColorA: { value: colors.magenta },
+      uColorB: { value: colors.gold },
+      uFlicker: sharedUniforms.uFlicker
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      varying vec3 vNormal;
+      varying vec3 vViewPosition;
+      void main() {
+        vUv = uv;
+        vNormal = normalize(normalMatrix * normal);
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vViewPosition = -mvPosition.xyz;
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform float uFlicker;
+      uniform vec3 uColorA;
+      uniform vec3 uColorB;
+      varying vec2 vUv;
+      varying vec3 vNormal;
+      varying vec3 vViewPosition;
+
+      float intermittent(float t) {
+        float gate = step(0.4, sin(t * 5.0) * 0.5 + 0.5);
+        float burst = smoothstep(0.8, 1.0, sin(t * 15.0) * 0.5 + 0.5);
+        return max(gate * 0.4, burst);
+      }
+
+      void main() {
+        vec3 viewDir = normalize(vViewPosition);
+        float fresnel = pow(1.0 - abs(dot(viewDir, normalize(vNormal))), 2.35);
+        float traveling = smoothstep(0.1, 0.0, abs(fract(vUv.y * 3.0 - uTime * 2.0) - 0.5) - 0.1);
+        float filament = 0.5 + 0.5 * sin((vUv.y * 42.0) - uTime * 12.0);
+        float pulse = intermittent(uTime + vUv.y * 2.0) * uFlicker;
+        float alpha = 0.11 + fresnel * 0.42 + traveling * 0.56 + filament * pulse * 0.22;
+        vec3 baseColor = mix(uColorA, uColorB, vUv.y + sin(uTime) * 0.2);
+        vec3 brightColor = mix(baseColor, vec3(1.0), traveling * 0.55);
+        gl_FragColor = vec4(brightColor * 0.92, alpha);
+      }
+    `
+  });
+
+  const holographicFaceMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: sharedUniforms.uTime,
+      uColorA: { value: colors.deepBlue },
+      uColorB: { value: colors.cyan }
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vWorld;
+      varying vec3 vViewPosition;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        vWorld = world.xyz;
+        vec4 mvPosition = viewMatrix * world;
+        vViewPosition = -mvPosition.xyz;
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform vec3 uColorA;
+      uniform vec3 uColorB;
+      varying vec3 vNormal;
+      varying vec3 vWorld;
+      varying vec3 vViewPosition;
+
+      void main() {
+        vec3 viewDir = normalize(vViewPosition);
+        float fresnel = pow(1.0 - abs(dot(viewDir, normalize(vNormal))), 1.45);
+        float scanline = sin(vWorld.y * 60.0 - uTime * 15.0) * 0.5 + 0.5;
+        scanline = smoothstep(0.8, 1.0, scanline);
+        float wave = sin(length(vWorld.xz) * 5.0 - uTime * 3.0) * 0.5 + 0.5;
+        vec3 color = mix(uColorA, uColorB, wave + fresnel * 0.5);
+        float alpha = (fresnel * 0.13) + (scanline * 0.08) + (wave * 0.04);
+        gl_FragColor = vec4(color, alpha * 0.72);
+      }
+    `
+  });
+
+  const coreShaderMaterial = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: true,
+    blending: THREE.NormalBlending,
+    uniforms: {
+      uTime: sharedUniforms.uTime,
+      uColorA: { value: colors.amberCore },
+      uColorB: { value: colors.violetCore },
+      uColorC: { value: colors.hotWhite }
+    },
+    vertexShader: `
+      varying vec3 vNormal;
+      varying vec3 vWorld;
+      varying vec3 vViewPosition;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        vec4 world = modelMatrix * vec4(position, 1.0);
+        vWorld = world.xyz;
+        vec4 mvPosition = viewMatrix * world;
+        vViewPosition = -mvPosition.xyz;
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      uniform vec3 uColorA;
+      uniform vec3 uColorB;
+      uniform vec3 uColorC;
+      varying vec3 vNormal;
+      varying vec3 vWorld;
+      varying vec3 vViewPosition;
+
+      void main() {
+        vec3 viewDir = normalize(vViewPosition);
+        float rim = pow(1.0 - abs(dot(viewDir, normalize(vNormal))), 2.2);
+        float latitude = sin((vWorld.y * 18.0) + uTime * 4.0) * 0.5 + 0.5;
+        float lava = sin((vWorld.x + vWorld.y + vWorld.z) * 12.0 - uTime * 7.0) * 0.5 + 0.5;
+        vec3 color = mix(uColorA, uColorB, latitude * 0.68 + lava * 0.22);
+        color = mix(color, uColorC, rim * 0.38 + smoothstep(0.82, 1.0, lava) * 0.18);
+        float alpha = 0.95;
+        gl_FragColor = vec4(color, alpha);
+      }
+    `
+  });
+
+  function makeTubeBetween(a, b, radius = 0.015, mat) {
+    const dir = new THREE.Vector3().subVectors(b, a);
+    const len = dir.length();
+    const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+    const geometry = new THREE.CylinderGeometry(radius, radius, len, 10, 1, true);
+    geometry.rotateX(Math.PI * 0.5);
+    const mesh = new THREE.Mesh(geometry, mat);
+    mesh.position.copy(mid);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir.normalize());
+    return mesh;
+  }
+
+  function makeGlowNode(position, color, scale = 1) {
+    const mat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.8,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.08 * scale, 16, 16), mat);
+
+    const glowMat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.2,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.2 * scale, 16, 16), glowMat);
+
+    const group = new THREE.Group();
+    group.add(mesh);
+    group.add(glow);
+    group.position.copy(position);
+    group.userData = { phase: Math.random() * Math.PI * 2, baseScale: scale };
+    return group;
+  }
+
+  function makeRing(radius, color, opacity = 0.32) {
+    const curve = new THREE.EllipseCurve(0, 0, radius, radius, 0, Math.PI * 2, false, 0);
+    const points = curve.getPoints(220).map(p => new THREE.Vector3(p.x, p.y, 0));
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    return new THREE.LineLoop(geometry, material);
+  }
+
+  const R = 2.5;
+  const top = new THREE.Vector3(0, R, 0);
+  const bottom = new THREE.Vector3(0, -R, 0);
+  const left = new THREE.Vector3(-R, 0, 0);
+  const right = new THREE.Vector3(R, 0, 0);
+  const front = new THREE.Vector3(0, 0, R);
+  const back = new THREE.Vector3(0, 0, -R);
+
+  const outerVertices = { top, bottom, left, right, front, back };
+  const outerEdges = [
+    [top, left], [top, right], [top, front], [top, back],
+    [bottom, left], [bottom, right], [bottom, front], [bottom, back],
+    [left, front], [front, right], [right, back], [back, left]
+  ];
+
+  const innerScale = 0.45;
+  const inner = Object.fromEntries(
+    Object.entries(outerVertices).map(([key, value]) => [key, value.clone().multiplyScalar(innerScale)])
+  );
+
+  const innerEdges = [
+    [inner.top, inner.left], [inner.top, inner.right], [inner.top, inner.front], [inner.top, inner.back],
+    [inner.bottom, inner.left], [inner.bottom, inner.right], [inner.bottom, inner.front], [inner.bottom, inner.back],
+    [inner.left, inner.front], [inner.front, inner.right], [inner.right, inner.back], [inner.back, inner.left]
+  ];
+
+  const sacredConnections = [
+    [top, inner.top], [bottom, inner.bottom], [left, inner.left], 
+    [right, inner.right], [front, inner.front], [back, inner.back]
+  ];
+
+  const animatedElements = { tubes: [], nodes: [], orbs: [], rings: [] };
+
+  outerEdges.forEach(([a, b]) => {
+    const t = makeTubeBetween(a, b, 0.015, energyTubeMaterial.clone());
+    outerConstruct.add(t);
+    animatedElements.tubes.push(t);
+  });
+
+  const innerTubeMat = energyTubeMaterial.clone();
+  innerTubeMat.uniforms.uColorA.value = colors.deepBlue;
+  innerTubeMat.uniforms.uColorB.value = colors.cyan;
+  innerEdges.forEach(([a, b]) => {
+    const t = makeTubeBetween(a, b, 0.01, innerTubeMat);
+    innerConstruct.add(t);
+    animatedElements.tubes.push(t);
+  });
+
+  const connMat = energyTubeMaterial.clone();
+  connMat.uniforms.uColorA.value = colors.magenta;
+  connMat.uniforms.uColorB.value = colors.cyan;
+  sacredConnections.forEach(([a, b]) => {
+    const t = makeTubeBetween(a, b, 0.005, connMat);
+    masterGroup.add(t);
+    animatedElements.tubes.push(t);
+  });
+
+  const outerFace = new THREE.Mesh(new THREE.OctahedronGeometry(R * 0.99, 0), holographicFaceMaterial);
+  outerConstruct.add(outerFace);
+
+  const innerFaceMat = holographicFaceMaterial.clone();
+  innerFaceMat.uniforms.uColorA.value = colors.magenta;
+  innerFaceMat.uniforms.uColorB.value = colors.gold;
+  const innerFace = new THREE.Mesh(new THREE.OctahedronGeometry(R * innerScale * 0.98, 0), innerFaceMat);
+  innerConstruct.add(innerFace);
+
+  const wireMat = new THREE.LineBasicMaterial({
+    color: 0x00f0ff,
+    transparent: true,
+    opacity: 0.16,
+    blending: THREE.AdditiveBlending
+  });
+  const innerWire = new THREE.LineSegments(new THREE.WireframeGeometry(innerFace.geometry), wireMat);
+  innerConstruct.add(innerWire);
+
+  const outerWireMat = new THREE.LineBasicMaterial({
+    color: 0xffbc40,
+    transparent: true,
+    opacity: 0.09,
+    blending: THREE.AdditiveBlending
+  });
+  const outerWire = new THREE.LineSegments(new THREE.WireframeGeometry(outerFace.geometry), outerWireMat);
+  outerConstruct.add(outerWire);
+
+  Object.values(outerVertices).forEach(p => {
+    const n = makeGlowNode(p, colors.magenta, 1.2);
+    outerConstruct.add(n);
+    animatedElements.nodes.push(n);
+  });
+
+  Object.values(inner).forEach(p => {
+    const n = makeGlowNode(p, colors.amberCore, 0.78);
+    innerConstruct.add(n);
+    animatedElements.nodes.push(n);
+  });
+
+  const coreGeo = new THREE.IcosahedronGeometry(0.42, 3);
+  const centralCore = new THREE.Mesh(coreGeo, coreShaderMaterial);
+  innerConstruct.add(centralCore);
+
+  const coreWire = new THREE.LineSegments(
+    new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(0.475, 2)),
+    new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.38,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    })
+  );
+  innerConstruct.add(coreWire);
+
+  const coreHaloMat = new THREE.MeshBasicMaterial({
+    color: colors.amberCore,
+    transparent: true,
+    opacity: 0.07,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const coreHalo = new THREE.Mesh(new THREE.SphereGeometry(0.82, 40, 40), coreHaloMat);
+  innerConstruct.add(coreHalo);
+
+  const ringA = makeRing(0.72, 0xffbc40, 0.46);
+  const ringB = makeRing(0.95, 0x8a2cff, 0.32);
+  const ringC = makeRing(1.16, 0x00f0ff, 0.22);
+  ringA.rotation.x = Math.PI * 0.5;
+  ringB.rotation.y = Math.PI * 0.5;
+  ringC.rotation.z = Math.PI * 0.25;
+  innerConstruct.add(ringA, ringB, ringC);
+  animatedElements.rings.push(ringA, ringB, ringC);
+
+  const coreLight = new THREE.PointLight(0xffbc40, 7, 9, 2);
+  innerConstruct.add(coreLight);
+
+  const violetLight = new THREE.PointLight(0x8a2cff, 3, 11, 2.4);
+  violetLight.position.set(0.85, 0.6, 0.75);
+  innerConstruct.add(violetLight);
+
+  const cyanRimLight = new THREE.PointLight(0x00f0ff, 2.5, 15, 2);
+  cyanRimLight.position.set(-3.4, 2.2, 4.4);
+  scene.add(cyanRimLight);
+
+  const warmFillLight = new THREE.PointLight(0xff9d2d, 1.4, 16, 2);
+  warmFillLight.position.set(4.4, -2.4, 3.2);
+  scene.add(warmFillLight);
+
+  const particleCount = 1400;
+  const particleGeo = new THREE.BufferGeometry();
+  const particlePos = new Float32Array(particleCount * 3);
+  const particleScales = new Float32Array(particleCount);
+  const particleColorMix = new Float32Array(particleCount);
+
+  for (let i = 0; i < particleCount; i++) {
+    const r = 0.35 + Math.pow(Math.random(), 2.0) * 4.35;
+    const theta = Math.random() * Math.PI * 2;
+    const y = (Math.random() - 0.5) * (1.0 / r) * 2.2;
+
+    particlePos[i * 3] = Math.cos(theta) * r;
+    particlePos[i * 3 + 1] = y;
+    particlePos[i * 3 + 2] = Math.sin(theta) * r;
+    particleScales[i] = Math.random();
+    particleColorMix[i] = Math.random();
+  }
+
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePos, 3));
+  particleGeo.setAttribute('aScale', new THREE.BufferAttribute(particleScales, 1));
+  particleGeo.setAttribute('aColorMix', new THREE.BufferAttribute(particleColorMix, 1));
+
+  const particleMat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: sharedUniforms.uTime,
+      uColorA: { value: colors.cyan },
+      uColorB: { value: colors.amberCore },
+      uColorC: { value: colors.magenta }
+    },
+    vertexShader: `
+      uniform float uTime;
+      attribute float aScale;
+      attribute float aColorMix;
+      varying float vAlpha;
+      varying float vColorMix;
+
+      void main() {
+        float distXZ = max(length(position.xz), 0.001);
+        float angle = uTime * (0.5 / distXZ);
+        mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+
+        vec3 pos = position;
+        pos.xz = rot * pos.xz;
+        pos.y += sin(uTime * 1.2 + distXZ * 3.0 + aScale * 8.0) * 0.045;
+
+        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+        gl_PointSize = (16.0 * aScale + 1.6) * (1.0 / -mvPosition.z);
+        vAlpha = (0.28 + 0.72 * sin(uTime * 3.0 + aScale * 10.0)) * (1.0 - smoothstep(0.0, 5.2, length(pos)));
+        vColorMix = aColorMix;
+
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColorA;
+      uniform vec3 uColorB;
+      uniform vec3 uColorC;
+      varying float vAlpha;
+      varying float vColorMix;
+
+      void main() {
+        float dist = length(gl_PointCoord - vec2(0.5));
+        if (dist > 0.5) discard;
+
+        float glow = smoothstep(0.5, 0.0, dist);
+        vec3 color = mix(uColorA, uColorB, smoothstep(0.25, 0.85, vColorMix));
+        color = mix(color, uColorC, smoothstep(0.78, 1.0, vColorMix) * 0.45);
+
+        gl_FragColor = vec4(color * glow, vAlpha * glow);
+      }
+    `
+  });
+
+  const stardust = new THREE.Points(particleGeo, particleMat);
+  scene.add(stardust);
+
+  const starCount = 900;
+  const starGeo = new THREE.BufferGeometry();
+  const starPos = new Float32Array(starCount * 3);
+  const starScale = new Float32Array(starCount);
+
+  for (let i = 0; i < starCount; i++) {
+    const radius = 15 + Math.random() * 34;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+
+    starPos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+    starPos[i * 3 + 1] = radius * Math.cos(phi);
+    starPos[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+    starScale[i] = Math.random();
+  }
+
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  starGeo.setAttribute('aScale', new THREE.BufferAttribute(starScale, 1));
+
+  const starMat = new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uTime: sharedUniforms.uTime
+    },
+    vertexShader: `
+      uniform float uTime;
+      attribute float aScale;
+      varying float vAlpha;
+
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = (8.0 * aScale + 1.0) * (1.0 / -mvPosition.z);
+        vAlpha = 0.28 + 0.5 * sin(uTime * 1.5 + aScale * 20.0);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      varying float vAlpha;
+
+      void main() {
+        float dist = length(gl_PointCoord - vec2(0.5));
+        if (dist > 0.5) discard;
+
+        float glow = smoothstep(0.5, 0.0, dist);
+        gl_FragColor = vec4(vec3(0.75, 0.92, 1.0), vAlpha * glow * 0.56);
+      }
+    `
+  });
+
+  const stars = new THREE.Points(starGeo, starMat);
+  scene.add(stars);
+
+  function createOrb() {
+    const orbGroup = new THREE.Group();
+
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    );
+
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.15, 16, 16),
+      new THREE.MeshBasicMaterial({
+        color: colors.magenta,
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+
+    orbGroup.add(core);
+    orbGroup.add(glow);
+
+    return { mesh: orbGroup, coreMat: core.material, glowMat: glow.material };
+  }
+
+  outerEdges.forEach((edge, i) => {
+    const orbData = createOrb();
+    outerConstruct.add(orbData.mesh);
+    animatedElements.orbs.push({
+      ...orbData,
+      a: edge[0],
+      b: edge[1],
+      speed: 0.2 + Math.random() * 0.3,
+      offset: Math.random() * Math.PI * 2,
+      direction: i % 2 === 0 ? 1 : -1
+    });
+  });
+
+  function setViewportSize() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    renderer.setSize(width, height);
+    composer.setSize(width, height);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+  }
+
+  window.addEventListener('resize', setViewportSize);
+  setViewportSize();
+
+  const freqUi = document.getElementById('freq-val');
+
+  function smoothstep(edge0, edge1, x) {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  }
+
+
+  // Advanced procedural effects: orbital gyroscope, expanding energy wave, and a local synth bed.
+  const advancedRig = new THREE.Group();
+  scene.add(advancedRig);
+  const rigMaterialA = new THREE.MeshBasicMaterial({ color: 0x00eaff, wireframe: true, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false });
+  const rigMaterialB = new THREE.MeshBasicMaterial({ color: 0xffbd4a, wireframe: true, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false });
+  const gyroscopeA = new THREE.Mesh(new THREE.TorusKnotGeometry(2.25, 0.008, 180, 6, 2, 5), rigMaterialA);
+  const gyroscopeB = new THREE.Mesh(new THREE.TorusKnotGeometry(2.55, 0.006, 160, 5, 3, 7), rigMaterialB);
+  gyroscopeA.rotation.set(0.8, 0.2, 0.3);
+  gyroscopeB.rotation.set(0.2, 1.0, 0.8);
+  advancedRig.add(gyroscopeA, gyroscopeB);
+
+  const shockwaveMaterial = new THREE.MeshBasicMaterial({ color: 0x00eaff, transparent: true, opacity: 0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false, wireframe: true });
+  const shockwave = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.025, 8, 96), shockwaveMaterial);
+  shockwave.rotation.x = Math.PI / 2;
+  scene.add(shockwave);
+  let surgeStartedAt = -100;
+  let surgeBoost = 0;
+  let motionEnabled = true;
+
+  window.triggerReactorSurge = () => {
+    surgeStartedAt = clock.getElapsedTime();
+    surgeBoost = 1;
+    if (window.showReactorToast) window.showReactorToast('ENERGY SURGE INITIATED');
+  };
+  window.toggleReactorMotion = () => {
+    motionEnabled = !motionEnabled;
+    controls.autoRotate = motionEnabled;
+    document.getElementById('motion-toggle').classList.toggle('active', motionEnabled);
+    document.getElementById('motion-toggle').textContent = motionEnabled ? '◉ Motion: On' : '◉ Motion: Off';
+    document.getElementById('motion-toggle').setAttribute('aria-pressed', String(motionEnabled));
+    if (window.showReactorToast) window.showReactorToast(motionEnabled ? 'AUTO MOTION ENABLED' : 'AUTO MOTION PAUSED');
+  };
+  window.resetReactorCamera = () => {
+    camera.position.set(2.2, 1.55, 8.6);
+    controls.target.set(0, 0, 0);
+
+    // Animate the added orbital lattice and one-shot expanding shockwave.
+    gyroscopeA.rotation.x = 0.8 + time * 0.12;
+    gyroscopeA.rotation.y = 0.2 + time * 0.2;
+    gyroscopeB.rotation.x = 0.2 - time * 0.16;
+    gyroscopeB.rotation.z = 0.8 + time * 0.11;
+    gyroscopeA.scale.setScalar(1 + Math.sin(time * 0.8) * 0.018);
+    gyroscopeB.scale.setScalar(1 + Math.cos(time * 0.65) * 0.014);
+    const surgeAge = time - surgeStartedAt;
+    if (surgeAge >= 0 && surgeAge < 1.8) {
+      const waveT = surgeAge / 1.8;
+      shockwave.scale.setScalar(0.7 + waveT * 5.4);
+      shockwave.material.opacity = Math.sin(Math.PI * waveT) * 0.85;
+      shockwave.position.y = Math.sin(waveT * Math.PI) * 0.12;
+      surgeBoost = 1 - waveT;
+      coreLight.intensity += surgeBoost * 5;
+      bloomPass.strength = 0.8 + surgeBoost * 0.55;
+    } else {
+      shockwave.material.opacity = 0;
+      surgeBoost = 0;
+      bloomPass.strength = 0.8;
+    }
+
+    controls.update();
+    if (window.showReactorToast) window.showReactorToast('VIEW RECALIBRATED');
+  };
+
+  let audioContext = null, masterGain = null, oscillatorA = null, oscillatorB = null, lfo = null, lfoGain = null;
+  let audioOn = false;
+  window.toggleReactorAudio = async () => {
+    const button = document.getElementById('audio-toggle');
+    if (!audioOn) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) {
+        if (window.showReactorToast) window.showReactorToast('WEB AUDIO NOT SUPPORTED');
+        return;
+      }
+      audioContext = audioContext || new AudioCtx();
+      await audioContext.resume();
+      masterGain = audioContext.createGain();
+      masterGain.gain.value = 0.0001;
+      masterGain.connect(audioContext.destination);
+      oscillatorA = audioContext.createOscillator();
+      oscillatorB = audioContext.createOscillator();
+      lfo = audioContext.createOscillator();
+      lfoGain = audioContext.createGain();
+      oscillatorA.type = 'sine'; oscillatorA.frequency.value = 55;
+      oscillatorB.type = 'triangle'; oscillatorB.frequency.value = 82.41;
+      lfo.type = 'sine'; lfo.frequency.value = 0.16; lfoGain.gain.value = 0.018;
+      const filter = audioContext.createBiquadFilter();
+      filter.type = 'lowpass'; filter.frequency.value = 240;
+      oscillatorA.connect(filter); oscillatorB.connect(filter); filter.connect(masterGain);
+      lfo.connect(lfoGain); lfoGain.connect(masterGain.gain);
+      oscillatorA.start(); oscillatorB.start(); lfo.start();
+      masterGain.gain.setTargetAtTime(0.045, audioContext.currentTime, 0.6);
+      audioOn = true;
+      button.textContent = '♫ Sound: On'; button.classList.add('active'); button.setAttribute('aria-pressed', 'true');
+      if (window.showReactorToast) window.showReactorToast('AMBIENT SYNTH ONLINE');
+    } else {
+      if (masterGain && audioContext) masterGain.gain.setTargetAtTime(0.0001, audioContext.currentTime, 0.15);
+      audioOn = false;
+      button.textContent = '♫ Sound: Off'; button.classList.remove('active'); button.setAttribute('aria-pressed', 'false');
+      if (window.showReactorToast) window.showReactorToast('AMBIENT SYNTH MUTED');
+    }
+  };
+
+  document.getElementById('audio-toggle').addEventListener('click', () => window.toggleReactorAudio());
+  document.getElementById('surge-trigger').addEventListener('click', () => window.triggerReactorSurge());
+  document.getElementById('motion-toggle').addEventListener('click', () => window.toggleReactorMotion());
+  document.getElementById('camera-reset').addEventListener('click', () => window.resetReactorCamera());
+
+  function animate() {
+    const time = clock.getElapsedTime();
+    sharedUniforms.uTime.value = time;
+
+    const globalPulse = 0.8 + 0.2 * Math.sin(time * 2.0);
+    const randomSurge = smoothstep(0.85, 1.0, Math.sin(time * 7.3) * 0.5 + 0.5);
+    sharedUniforms.uFlicker.value = globalPulse + randomSurge * 1.5;
+
+    if (Math.floor(time * 10) % 5 === 0) {
+      freqUi.innerText = (144.0 + (Math.random() * 2 - 1) + randomSurge * 15).toFixed(1);
+    }
+
+    masterGroup.position.y = Math.sin(time * 0.5) * 0.1;
+
+    outerConstruct.rotation.y = time * 0.1;
+    outerConstruct.rotation.x = Math.sin(time * 0.15) * 0.1;
+    outerConstruct.rotation.z = Math.cos(time * 0.1) * 0.05;
+
+    innerConstruct.rotation.y = -time * 0.25;
+    innerConstruct.rotation.x = Math.cos(time * 0.2) * 0.15;
+
+    centralCore.rotation.x = time * 1.5;
+    centralCore.rotation.y = time * 1.2;
+    centralCore.rotation.z = time * 0.38;
+    centralCore.scale.setScalar(1.0 + Math.sin(time * 8.0) * 0.045 + randomSurge * 0.16);
+
+    coreWire.rotation.x = -time * 1.1;
+    coreWire.rotation.y = time * 1.35;
+    coreWire.scale.setScalar(1.0 + Math.sin(time * 6.0) * 0.035 + randomSurge * 0.11);
+
+    coreHalo.scale.setScalar(1.0 + Math.sin(time * 3.4) * 0.02 + randomSurge * 0.05);
+    coreHalo.material.opacity = 0.055 + Math.sin(time * 3.1) * 0.015 + randomSurge * 0.03;
+
+    coreLight.intensity = 4.5 + Math.sin(time * 10) * 0.8 + randomSurge * 2.2;
+    violetLight.intensity = 2.2 + Math.sin(time * 4.0) * 0.8 + randomSurge * 2.5;
+    cyanRimLight.intensity = 2.0 + Math.sin(time * 2.5) * 0.5;
+
+    animatedElements.rings.forEach((ring, index) => {
+      ring.rotation.x += 0.004 + index * 0.001;
+      ring.rotation.y += 0.003 + index * 0.0015;
+      ring.rotation.z += 0.002 + index * 0.0008;
+      ring.scale.setScalar(1.0 + Math.sin(time * (2.0 + index) + index) * 0.025 + randomSurge * 0.05);
+      ring.material.opacity = ring === ringA ? 0.42 + randomSurge * 0.14 : 0.22 + randomSurge * 0.1;
+    });
+
+    stardust.rotation.y = time * 0.025;
+    stars.rotation.y = time * 0.004;
+    stars.rotation.x = Math.sin(time * 0.08) * 0.02;
+
+    animatedElements.nodes.forEach(node => {
+      const s = node.userData.baseScale * (1.0 + 0.15 * Math.sin(time * 5.0 + node.userData.phase) + randomSurge * 0.3);
+      node.scale.setScalar(s);
+    });
+
+    animatedElements.orbs.forEach(orb => {
+      const raw = (time * orb.speed + orb.offset) % 2.0;
+      const t = raw > 1.0 ? 2.0 - raw : raw;
+
+      const pos = new THREE.Vector3().lerpVectors(
+        orb.a,
+        orb.b,
+        orb.direction === 1 ? t : 1.0 - t
+      );
+
+      const dir = new THREE.Vector3().subVectors(orb.b, orb.a).normalize();
+      const up = Math.abs(dir.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+      const right = new THREE.Vector3().crossVectors(dir, up).normalize();
+      pos.addScaledVector(right, Math.sin(time * 15.0 + orb.offset) * 0.02);
+
+      orb.mesh.position.copy(pos);
+
+      const flare = Math.sin(time * 10.0 + orb.offset) * 0.5 + 0.5;
+      orb.mesh.scale.setScalar(1.0 + flare * 0.5);
+      orb.glowMat.opacity = 0.3 + flare * 0.4;
+    });
+
+    controls.update();
+    composer.render();
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+</script>
+    
+  
+<div id="reactor-boot" aria-label="Loading Sacred Geometry Reactor">
+  <div class="boot-shell">
+    <div class="boot-emblem"><span class="boot-core"></span></div>
+    <div class="boot-title">Sacred Geometry Reactor</div>
+    <div class="boot-sub">NEURAL ENERGY MATRIX // INITIALIZING</div>
+    <div class="boot-track"><div id="boot-progress"></div></div>
+    <div id="boot-status">CALIBRATING OPTICAL SYSTEMS… 0%</div>
+  </div>
+</div>
+<div id="reactor-console" aria-label="Reactor controls">
+  <button class="reactor-btn" id="audio-toggle" type="button" aria-pressed="false">♫ Sound: Off</button>
+  <button class="reactor-btn" id="surge-trigger" type="button">⚡ Energy Surge</button>
+  <button class="reactor-btn" id="motion-toggle" type="button" aria-pressed="true">◉ Motion: On</button>
+  <button class="reactor-btn" id="camera-reset" type="button">⌖ Reset View</button>
+</div>
+<div id="reactor-toast" role="status" aria-live="polite"></div>
+<div id="reactor-credit">DESIGNED &amp; DEVELOPED BY<br><strong>MD.Atiqul Islam (Atik)</strong><br><a href="mailto:atik.cmttiu1001@gmail.com">atik.cmttiu1001@gmail.com</a></div>
+<script>
+(() => {
+  const boot = document.getElementById('reactor-boot');
+  const bar = document.getElementById('boot-progress');
+  const status = document.getElementById('boot-status');
+  const phases = ['MAPPING GEOMETRY', 'SYNCHRONIZING PARTICLES', 'IGNITING QUANTUM CORE', 'SYSTEM ONLINE'];
+  let p = 0;
+  const bootTimer = setInterval(() => {
+    p = Math.min(100, p + 7 + Math.random() * 12);
+    bar.style.width = p + '%';
+    status.textContent = (p < 25 ? phases[0] : p < 52 ? phases[1] : p < 82 ? phases[2] : phases[3]) + '… ' + Math.round(p) + '%';
+    if (p >= 100) {
+      clearInterval(bootTimer);
+      setTimeout(() => boot.classList.add('boot-out'), 250);
+    }
+  }, 105);
+  const toast = document.getElementById('reactor-toast');
+  let toastTimer;
+  window.showReactorToast = (message) => {
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1900);
+  };
+})();
+</script>
+
+</body>
+  
+</html>
